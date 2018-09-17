@@ -3,15 +3,13 @@ package els.sync.demo;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -21,7 +19,6 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.fetch.subphase.FetchSourceContext;
 import org.web3j.protocol.Web3j;
 import org.web3j.protocol.core.DefaultBlockParameter;
-import org.web3j.protocol.core.methods.response.EthBlock;
 import org.web3j.protocol.core.methods.response.EthBlock.Block;
 import org.web3j.protocol.core.methods.response.EthBlock.TransactionObject;
 import org.web3j.protocol.core.methods.response.EthBlock.TransactionResult;
@@ -56,7 +53,7 @@ public class ELSIndexWorker implements Runnable {
       List<TransactionResult> transactions = block.getTransactions();
       int transactionLength = transactions.size();
       
-      if (isDone(blockNumber)) return;
+      if (existedBlock(blockNumber)) return;
       
       if (transactions.size() == 0) {
         indexBlock(transactionLength, blockNumber);
@@ -68,11 +65,16 @@ public class ELSIndexWorker implements Runnable {
         return;
       }
       
+      long start = System.currentTimeMillis();
       for (TransactionResult<TransactionObject> result : transactions) {
         TransactionObject obj = result.get();
         Transaction transaction = obj.get();
         indexTransactions(transaction, block);
       }
+      
+      indexBlock(transactionLength, blockNumber);
+      
+      System.out.println(new Date() + "| Index " + transactionLength +" transactions of block " + blockNumber + " in " + (System.currentTimeMillis() - start) + "(ms)");
       
     } catch (Exception e) {
       throw new RuntimeException(e);
@@ -80,6 +82,8 @@ public class ELSIndexWorker implements Runnable {
   }
   
   private void indexTransactions(Transaction transaction, Block block) throws IOException {
+    
+    if (existedTransaction(transaction)) return;
     
     IndexRequest indexRequest = new IndexRequest("eth_trans", "_doc", transaction.getHash());
     
@@ -96,8 +100,7 @@ public class ELSIndexWorker implements Runnable {
     
     indexRequest.source(source);
     
-    IndexResponse response = elsClient.index(indexRequest, RequestOptions.DEFAULT);
-    System.out.println(response.toString());
+    elsClient.index(indexRequest, RequestOptions.DEFAULT);
   }
   
   private boolean enough(int transactionsLength, BigInteger blockNumber) throws IOException {
@@ -112,8 +115,15 @@ public class ELSIndexWorker implements Runnable {
     return transactionsLength == response.getHits().totalHits;
   }
 
-  private boolean isDone(BigInteger blockNumber) throws IOException {
+  private boolean existedBlock(BigInteger blockNumber) throws IOException {
     GetRequest getRequest = new GetRequest("eth_blocks", "_doc", blockNumber.toString());
+    getRequest.fetchSourceContext(new FetchSourceContext(false));
+    getRequest.storedFields("_none_");
+    return elsClient.exists(getRequest, RequestOptions.DEFAULT);
+  }
+  
+  private boolean existedTransaction(Transaction transaction) throws IOException {
+    GetRequest getRequest = new GetRequest("eth_trans", "_doc", transaction.getHash());
     getRequest.fetchSourceContext(new FetchSourceContext(false));
     getRequest.storedFields("_none_");
     return elsClient.exists(getRequest, RequestOptions.DEFAULT);
@@ -122,8 +132,6 @@ public class ELSIndexWorker implements Runnable {
   private void indexBlock(int transactionsLength, BigInteger blockNumber) throws IOException {
     IndexRequest indexRequest = new IndexRequest("eth_blocks", "_doc", blockNumber.toString());
     indexRequest.source("transactions", transactionsLength);
-    
-    IndexResponse response = elsClient.index(indexRequest, RequestOptions.DEFAULT);
-    System.out.println(response.toString());
+    elsClient.index(indexRequest, RequestOptions.DEFAULT);
   }
 }
