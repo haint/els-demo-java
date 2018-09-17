@@ -30,11 +30,11 @@ public class Main {
     if (args.length == 0) {
       BigInteger blockNumber = ethClient.ethBlockNumber().send().getBlockNumber();
       ExecutorService executorService = Executors.newFixedThreadPool(100);
-      for (BigInteger bi = BigInteger.ZERO; bi.compareTo(blockNumber) <= 0 ; bi = bi.add(BigInteger.ONE)) {
+      for (BigInteger bi = blockNumber; bi.compareTo(BigInteger.ZERO) >= 0 ; bi = bi.subtract(BigInteger.ONE)) {
         executorService.submit(new ELSIndexWorker(ethClient, elsClient, bi));
       }
     } else if (args[0].equals("sync")) {
-      ScheduledExecutorService execService = Executors.newScheduledThreadPool(1);
+      ScheduledExecutorService execService = Executors.newScheduledThreadPool(10);
       execService.scheduleAtFixedRate(new Runnable() {
         
         @Override

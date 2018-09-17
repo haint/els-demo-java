@@ -10,6 +10,7 @@ import java.util.Map;
 
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -77,6 +78,7 @@ public class ELSIndexWorker implements Runnable {
       System.out.println(new Date() + "| Index " + transactionLength +" transactions of block " + blockNumber + " in " + (System.currentTimeMillis() - start) + "(ms)");
       
     } catch (Exception e) {
+      e.printStackTrace();
       throw new RuntimeException(e);
     }
   }
@@ -88,15 +90,15 @@ public class ELSIndexWorker implements Runnable {
     IndexRequest indexRequest = new IndexRequest("eth_trans", "_doc", transaction.getHash());
     
     Map<String, Object> source = new HashMap<String, Object>();
-    source.put("blockNumber", block.getNumber());
+    source.put("blockNumber", block.getNumber().longValue());
     source.put("blockHash", block.getHash());
     source.put("input", transaction.getInput());
     source.put("from", transaction.getFrom());
     source.put("to", transaction.getTo());
-    source.put("value", Convert.fromWei(new BigDecimal(transaction.getValue()), Unit.ETHER));
-    source.put("gas", transaction.getGas());
-    source.put("gasPrice", Convert.fromWei(new BigDecimal(transaction.getGasPrice()), Unit.GWEI));
-    source.put("timestamp", block.getTimestamp());
+    source.put("value", Convert.fromWei(new BigDecimal(transaction.getValue()), Unit.ETHER).toString());
+    source.put("gas", transaction.getGas().toString());
+    source.put("gasPrice", Convert.fromWei(new BigDecimal(transaction.getGasPrice()), Unit.GWEI).toString());
+    source.put("timestamp", block.getTimestamp().longValue());
     
     indexRequest.source(source);
     
