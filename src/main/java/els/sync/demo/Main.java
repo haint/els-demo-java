@@ -42,6 +42,7 @@ public class Main {
           try {
             BigInteger blockNumber = ethClient.ethBlockNumber().send().getBlockNumber();
             System.out.println(new Date() + "| Highest block: " + blockNumber);
+            new ELSIndexWorker(ethClient, elsClient, blockNumber).run();
           } catch (IOException e) {
             throw new RuntimeException(e);
           }
