@@ -15,6 +15,7 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.fetch.subphase.FetchSourceContext;
@@ -51,18 +52,20 @@ public class ELSIndexWorker implements Runnable {
   public void run() {
     try {
       Block block = ethClient.ethGetBlockByNumber(DefaultBlockParameter.valueOf(blockNumber), true).send().getBlock();
+      if (block == null) return;
+      
       List<TransactionResult> transactions = block.getTransactions();
       int transactionLength = transactions.size();
       
       if (existedBlock(blockNumber)) return;
       
       if (transactions.size() == 0) {
-        indexBlock(transactionLength, blockNumber);
+        indexBlock(transactionLength, blockNumber, block.getHash());
         return;
       }
       
       if (enough(transactions.size(), blockNumber)) {
-        indexBlock(transactionLength, blockNumber);
+        indexBlock(transactionLength, blockNumber, block.getHash());
         return;
       }
       
@@ -73,7 +76,7 @@ public class ELSIndexWorker implements Runnable {
         indexTransactions(transaction, block);
       }
       
-      indexBlock(transactionLength, blockNumber);
+      indexBlock(transactionLength, blockNumber, block.getHash());
       
       System.out.println(new Date() + "| Index " + transactionLength +" transactions of block " + blockNumber + " in " + (System.currentTimeMillis() - start) + "(ms)");
       
@@ -89,18 +92,19 @@ public class ELSIndexWorker implements Runnable {
     
     IndexRequest indexRequest = new IndexRequest("eth_trans", "_doc", transaction.getHash());
     
-    Map<String, Object> source = new HashMap<String, Object>();
-    source.put("blockNumber", block.getNumber().longValue());
-    source.put("blockHash", block.getHash());
-    source.put("input", transaction.getInput());
-    source.put("from", transaction.getFrom());
-    source.put("to", transaction.getTo());
-    source.put("value", Convert.fromWei(new BigDecimal(transaction.getValue()), Unit.ETHER).toString());
-    source.put("gas", transaction.getGas().toString());
-    source.put("gasPrice", Convert.fromWei(new BigDecimal(transaction.getGasPrice()), Unit.GWEI).toString());
-    source.put("timestamp", block.getTimestamp().longValue());
+    String jsonString = "{\n"
+          + "\"blockNumber\":" + block.getNumber().longValue() + ",\n"
+          + "\"blockHash\":\"" + block.getHash() + "\",\n"
+          + "\"input\":\"" + transaction.getInput() + "\",\n"
+          + "\"from\":\"" + transaction.getFrom() + "\",\n"
+          + "\"to\":\"" + transaction.getTo() + "\",\n"
+          + "\"value\":" + Convert.fromWei(new BigDecimal(transaction.getValue()), Unit.ETHER).toString() + ",\n"
+          + "\"gas\":" + transaction.getGas().toString() + ",\n"
+          + "\"gasPrice\":" + Convert.fromWei(new BigDecimal(transaction.getGasPrice()), Unit.GWEI).toString() + ",\n"
+          + "\"timestamp\":" + block.getTimestamp().longValue() + ",\n"
+        + "}";
     
-    indexRequest.source(source);
+    indexRequest.source(jsonString, XContentType.JSON);
     
     elsClient.index(indexRequest, RequestOptions.DEFAULT);
   }
@@ -131,9 +135,9 @@ public class ELSIndexWorker implements Runnable {
     return elsClient.exists(getRequest, RequestOptions.DEFAULT);
   }
   
-  private void indexBlock(int transactionsLength, BigInteger blockNumber) throws IOException {
+  private void indexBlock(int transactionsLength, BigInteger blockNumber, String hash) throws IOException {
     IndexRequest indexRequest = new IndexRequest("eth_blocks", "_doc", blockNumber.toString());
-    indexRequest.source("transactions", transactionsLength);
+    indexRequest.source("transactions", transactionsLength, "hash", hash);
     elsClient.index(indexRequest, RequestOptions.DEFAULT);
   }
 }

@@ -42,7 +42,10 @@ public class Main {
           try {
             BigInteger blockNumber = ethClient.ethBlockNumber().send().getBlockNumber();
             System.out.println(new Date() + "| Highest block: " + blockNumber);
-            new ELSIndexWorker(ethClient, elsClient, blockNumber).run();
+            
+            for (BigInteger bi = blockNumber; bi.compareTo(blockNumber.subtract(BigInteger.valueOf(10))) >= 0 ; bi = bi.subtract(BigInteger.ONE)) {
+              new Thread(new ELSIndexWorker(ethClient, elsClient, bi)).start();
+            }
           } catch (IOException e) {
             throw new RuntimeException(e);
           }
