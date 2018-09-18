@@ -93,15 +93,15 @@ public class ELSIndexWorker implements Runnable {
     IndexRequest indexRequest = new IndexRequest("eth_trans", "_doc", transaction.getHash());
     
     String jsonString = "{\n"
-          + "\"blockNumber\":" + block.getNumber().longValue() + ",\n"
-          + "\"blockHash\":\"" + block.getHash() + "\",\n"
-          + "\"input\":\"" + transaction.getInput() + "\",\n"
-          + "\"from\":\"" + transaction.getFrom() + "\",\n"
-          + "\"to\":\"" + transaction.getTo() + "\",\n"
-          + "\"value\":" + Convert.fromWei(new BigDecimal(transaction.getValue()), Unit.ETHER).toString() + ",\n"
-          + "\"gas\":" + transaction.getGas().toString() + ",\n"
-          + "\"gasPrice\":" + Convert.fromWei(new BigDecimal(transaction.getGasPrice()), Unit.GWEI).toString() + ",\n"
-          + "\"timestamp\":" + block.getTimestamp().longValue() + ",\n"
+          + "  \"blockNumber\":" + block.getNumber().longValue() + ",\n"
+          + "  \"blockHash\":\"" + block.getHash() + "\",\n"
+          + "  \"input\":\"" + transaction.getInput() + "\",\n"
+          + "  \"from\":\"" + transaction.getFrom() + "\",\n"
+          + "  \"to\":\"" + transaction.getTo() + "\",\n"
+          + "  \"value\":" + Convert.fromWei(new BigDecimal(transaction.getValue()), Unit.ETHER).toString() + ",\n"
+          + "  \"gas\":" + transaction.getGas().toString() + ",\n"
+          + "  \"gasPrice\":" + Convert.fromWei(new BigDecimal(transaction.getGasPrice()), Unit.GWEI).toString() + ",\n"
+          + "  \"timestamp\":" + block.getTimestamp().longValue() + "\n"
         + "}";
     
     indexRequest.source(jsonString, XContentType.JSON);
