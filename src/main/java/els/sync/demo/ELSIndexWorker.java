@@ -94,13 +94,13 @@ public class ELSIndexWorker implements Runnable {
     
     String jsonString = "{\n"
           + "  \"blockNumber\":" + block.getNumber().longValue() + ",\n"
-          + "  \"blockHash\":\"" + block.getHash() + "\",\n"
+//          + "  \"blockHash\":\"" + block.getHash() + "\",\n"
           + "  \"input\":\"" + transaction.getInput() + "\",\n"
           + "  \"from\":\"" + transaction.getFrom() + "\",\n"
           + "  \"to\":\"" + transaction.getTo() + "\",\n"
           + "  \"value\":" + Convert.fromWei(new BigDecimal(transaction.getValue()), Unit.ETHER).toString() + ",\n"
-          + "  \"gas\":" + transaction.getGas().toString() + ",\n"
-          + "  \"gasPrice\":" + Convert.fromWei(new BigDecimal(transaction.getGasPrice()), Unit.GWEI).toString() + ",\n"
+//          + "  \"gas\":" + transaction.getGas().toString() + ",\n"
+//          + "  \"gasPrice\":" + Convert.fromWei(new BigDecimal(transaction.getGasPrice()), Unit.GWEI).toString() + ",\n"
           + "  \"timestamp\":" + block.getTimestamp().longValue() + "\n"
         + "}";
     
