@@ -31,7 +31,7 @@ public class Verify {
     
     int currentPage = 0;
     
-    ExecutorService executorService = Executors.newFixedThreadPool(10);
+    ExecutorService executorService = Executors.newFixedThreadPool(totalPage);
     
     while (currentPage != totalPage) {
       int start = currentPage * pageSize;
@@ -53,7 +53,7 @@ public class Verify {
     
     private final RestHighLevelClient elsClient;
     
-    private final ExecutorService executorService = Executors.newFixedThreadPool(100);
+    private final ExecutorService executorService = Executors.newFixedThreadPool(4);
     
     public BatchIndex(Web3j ethClient, RestHighLevelClient elsClient, int start, int end) {
       this.start = start;
